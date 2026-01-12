@@ -69,11 +69,17 @@ const videoRequestUtil = async () => {
 	}
 
 	async function videoRequest(prompt: string): Promise<API.SoraResponse.Video> {
+		if (!window.SentinelSDK) {
+			throw new Error("Sentinel SDK not available...");
+		}
+
+		const sentinelToken = await window.SentinelSDK.token();
 		const body = getVideoBodyParams(prompt);
 		return post(Url.CREATE, {
 			headers: {
 				"Authorization": `Bearer ${accessToken}`,
 				"Content-Type": "application/json",
+				"Openai-Sentinel-Token": sentinelToken,
 			},
 			body: JSON.stringify(body),
 		});

@@ -4,7 +4,7 @@ dotenv.config();
 
 import puppeteer from "puppeteer-extra";
 import StealthPlugin from "puppeteer-extra-plugin-stealth";
-import { executablePath, Page } from "puppeteer";
+import { executablePath } from "puppeteer";
 import { conversationsRequest } from "@/request/post/conversations";
 import { videoRequest } from "@/request/post/video";
 import { pendingVideoRequest } from "@/request/get/pendingVideo";
@@ -48,20 +48,13 @@ declare global {
 		// (forces the function name to remain intact)
 		// See: https://github.com/evanw/esbuild/issues/2605
 		__name?: <T extends (...args: unknown[]) => unknown>(cb: T) => T;
-	}
-
-	namespace Express {
-		interface Request {
-			pages: {
-				soraPage: Page;
-				chatGptPage: Page;
-			};
-		}
+		// Sora video request sentinel SDK
+		SentinelSDK?: { token: () => Promise<string> };
 	}
 }
 
 const server = getServer();
-const vpnArgs = !!process.env.VPN_EXTENSION_PATH
+const vpnArgs = process.env.VPN_EXTENSION_PATH
 	? [`--load-extension=${getLatestVPNVersionPath(process.env.VPN_EXTENSION_PATH)}`]
 	: [];
 
