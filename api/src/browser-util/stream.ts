@@ -18,11 +18,17 @@ const streamUtil = () => {
 		let modelSlug = "";
 		let conversationId = null;
 
-		while (true) {
-			const { value, done } = await reader.read();
+		let done = false;
+		while (!done) {
+			const result = await reader.read();
+
+			done = result.done;
+
 			if (done) {
 				break;
 			}
+
+			const value = result.value;
 
 			const decoded = decoder.decode(value, { stream: true });
 
@@ -52,18 +58,32 @@ const streamUtil = () => {
 					conversationId = dataMessage.conversation_id;
 				}
 
-				if (!dataMessage.v || !Array.isArray(dataMessage.v)) {
+				if (!dataMessage.v) {
+					continue;
+				}
+
+				if (typeof dataMessage.v === "string") {
+					answer += dataMessage.v;
+					continue;
+				}
+
+				if (!Array.isArray(dataMessage.v)) {
 					continue;
 				}
 
 				const statusMessage = dataMessage.v.find(
-					({ p }: { p: string }) => p === "/message/status"
+					({ p }: { p: string }) => p === "/message/status",
 				);
 				const contentMessage = dataMessage.v.find(
 					({ p, o }: { p: string; o: string }) =>
-						p === "/message/content/parts/0" &&
-						(o === "append" || o === "patch")
+						p === "/message/content/parts/0" && (o === "append" || o === "patch"),
 				);
+
+				console.log({
+					v: dataMessage.v,
+					statusMessage,
+					contentMessage,
+				});
 
 				if (contentMessage) {
 					answer += contentMessage.v;
