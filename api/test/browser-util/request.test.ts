@@ -44,6 +44,22 @@ describe("request util", () => {
 		expect(task).toHaveBeenCalledTimes(2);
 	});
 
+	it("throws when max attempts are reached", async () => {
+		const { retry } = await requestUtil();
+		const task = vi.fn().mockRejectedValue(new Error("nope"));
+
+		await expect(retry(task, 1)).rejects.toThrow("nope");
+		expect(task).toHaveBeenCalledTimes(1);
+	});
+
+	it("uses default max attempts when not provided", async () => {
+		const { retry } = await requestUtil();
+		const task = vi.fn().mockResolvedValueOnce("ok");
+
+		await expect(retry(task)).resolves.toBe("ok");
+		expect(task).toHaveBeenCalledTimes(1);
+	});
+
 	it("returns access tokens from session calls", async () => {
 		fetch.mockResolvedValueOnce({
 			ok: true,

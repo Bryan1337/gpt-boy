@@ -10,10 +10,7 @@ import {
 describe("video client", () => {
 	it("returns rate limit errors with time remaining", async () => {
 		setGptBoyUtils({
-			request: async () => ({
-				retry: vi.fn(async (callback: () => Promise<unknown>) => await callback()),
-			}),
-			videoRequest: async () => ({
+			videoRequest: {
 				videoUsageRequest: vi.fn().mockResolvedValueOnce({
 					rate_limit_and_credit_balance: {
 						rate_limit_reached: true,
@@ -21,22 +18,36 @@ describe("video client", () => {
 						estimated_num_videos_remaining: 0,
 					},
 				}),
-			}),
-			time: () => ({
-				formatSeconds: vi.fn(() => "1 minute, 1 second"),
-			}),
+			},
+			time: { formatSeconds: vi.fn(() => "1 minute, 1 second") },
 		});
 
 		const response = await getVideoResponse({ body: { prompt: "x" } });
 		expect(response.error).toContain("Reset occurs in 1 minute, 1 second.");
 	});
 
+	it("defaults reset time when not provided", async () => {
+		const formatSeconds = vi.fn(() => "0 seconds");
+		setGptBoyUtils({
+			videoRequest: {
+				videoUsageRequest: vi.fn().mockResolvedValueOnce({
+					rate_limit_and_credit_balance: {
+						rate_limit_reached: true,
+						estimated_num_videos_remaining: 0,
+					},
+				}),
+			},
+			time: { formatSeconds },
+		});
+
+		const response = await getVideoResponse({ body: { prompt: "x" } });
+		expect(formatSeconds).toHaveBeenCalledWith(0);
+		expect(response.error).toContain("Reset occurs in 0 seconds.");
+	});
+
 	it("returns video task details when successful", async () => {
 		setGptBoyUtils({
-			request: async () => ({
-				retry: vi.fn(async (callback: () => Promise<unknown>) => await callback()),
-			}),
-			videoRequest: async () => ({
+			videoRequest: {
 				videoUsageRequest: vi.fn().mockResolvedValueOnce({
 					rate_limit_and_credit_balance: {
 						rate_limit_reached: false,
@@ -44,10 +55,7 @@ describe("video client", () => {
 					},
 				}),
 				videoRequest: vi.fn().mockResolvedValueOnce({ id: "task-1" }),
-			}),
-			time: () => ({
-				formatSeconds: vi.fn(),
-			}),
+			},
 		});
 
 		const response = await getVideoResponse({ body: { prompt: "x" } });
@@ -55,12 +63,26 @@ describe("video client", () => {
 		expect(response.numVideosRemaining).toBe(1);
 	});
 
+	it("defaults remaining videos when usage is missing it", async () => {
+		setGptBoyUtils({
+			videoRequest: {
+				videoUsageRequest: vi.fn().mockResolvedValueOnce({
+					rate_limit_and_credit_balance: {
+						rate_limit_reached: false,
+					},
+				}),
+				videoRequest: vi.fn().mockResolvedValueOnce({ id: "task-2" }),
+			},
+		});
+
+		const response = await getVideoResponse({ body: { prompt: "x" } });
+		expect(response.taskId).toBe("task-2");
+		expect(response.numVideosRemaining).toBe(-1);
+	});
+
 	it("returns errors from video requests", async () => {
 		setGptBoyUtils({
-			request: async () => ({
-				retry: vi.fn(async (callback: () => Promise<unknown>) => await callback()),
-			}),
-			videoRequest: async () => ({
+			videoRequest: {
 				videoUsageRequest: vi.fn().mockResolvedValueOnce({
 					rate_limit_and_credit_balance: {
 						rate_limit_reached: false,
@@ -68,10 +90,7 @@ describe("video client", () => {
 					},
 				}),
 				videoRequest: vi.fn().mockRejectedValueOnce(new Error("boom")),
-			}),
-			time: () => ({
-				formatSeconds: vi.fn(),
-			}),
+			},
 		});
 
 		const response = await getVideoResponse({ body: { prompt: "x" } });
@@ -80,11 +99,11 @@ describe("video client", () => {
 
 	it("returns pending progress when present", async () => {
 		setGptBoyUtils({
-			videoRequest: async () => ({
+			videoRequest: {
 				videoPendingRequest: vi
 					.fn()
 					.mockResolvedValueOnce([{ id: "task", progress_pct: 42 }]),
-			}),
+			},
 		});
 
 		const response = await getPendingVideoResponse({ body: { taskId: "task" } });
@@ -93,9 +112,7 @@ describe("video client", () => {
 
 	it("returns null when pending task not found", async () => {
 		setGptBoyUtils({
-			videoRequest: async () => ({
-				videoPendingRequest: vi.fn().mockResolvedValueOnce([{ id: "other" }]),
-			}),
+			videoRequest: { videoPendingRequest: vi.fn().mockResolvedValueOnce([{ id: "other" }]) },
 		});
 
 		const response = await getPendingVideoResponse({ body: { taskId: "task" } });
@@ -104,9 +121,7 @@ describe("video client", () => {
 
 	it("returns errors when pending response is not an array", async () => {
 		setGptBoyUtils({
-			videoRequest: async () => ({
-				videoPendingRequest: vi.fn().mockResolvedValueOnce({ error: "bad" }),
-			}),
+			videoRequest: { videoPendingRequest: vi.fn().mockResolvedValueOnce({ error: "bad" }) },
 		});
 
 		const response = await getPendingVideoResponse({ body: { taskId: "task" } });
@@ -115,9 +130,7 @@ describe("video client", () => {
 
 	it("returns usage details", async () => {
 		setGptBoyUtils({
-			videoRequest: async () => ({
-				videoUsageRequest: vi.fn().mockResolvedValueOnce({ credits: 3 }),
-			}),
+			videoRequest: { videoUsageRequest: vi.fn().mockResolvedValueOnce({ credits: 3 }) },
 		});
 
 		const response = await getVideoCreditsResponse();
@@ -126,9 +139,7 @@ describe("video client", () => {
 
 	it("returns usage errors", async () => {
 		setGptBoyUtils({
-			videoRequest: async () => ({
-				videoUsageRequest: vi.fn().mockRejectedValueOnce(new Error("boom")),
-			}),
+			videoRequest: { videoUsageRequest: vi.fn().mockRejectedValueOnce(new Error("boom")) },
 		});
 
 		const response = await getVideoCreditsResponse();
@@ -144,12 +155,8 @@ describe("video client", () => {
 		const pause = vi.fn();
 
 		setGptBoyUtils({
-			videoRequest: async () => ({
-				videoDraftRequest,
-			}),
-			time: () => ({
-				pause,
-			}),
+			videoRequest: { videoDraftRequest },
+			time: { pause },
 		});
 
 		const response = await getVideoDraftResponse({ body: { taskId: "task" } });
@@ -161,15 +168,23 @@ describe("video client", () => {
 	it("returns errors when draft is not found", async () => {
 		const videoDraftRequest = vi.fn().mockResolvedValue({ items: [] });
 		setGptBoyUtils({
-			videoRequest: async () => ({
-				videoDraftRequest,
-			}),
-			time: () => ({
-				pause: vi.fn(),
-			}),
+			videoRequest: { videoDraftRequest },
+			time: { pause: vi.fn() },
 		});
 
 		const response = await getVideoDraftResponse({ body: { taskId: "task" } });
 		expect(response.error).toContain("Unable to find draft");
+	});
+
+	it("returns errors when draft lookup throws", async () => {
+		setGptBoyUtils({
+			videoRequest: async () => {
+				throw "boom";
+			},
+			time: { pause: vi.fn() },
+		});
+
+		const response = await getVideoDraftResponse({ body: { taskId: "task" } });
+		expect(response.error).toBe("boom");
 	});
 });

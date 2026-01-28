@@ -34,4 +34,36 @@ describe("stream util", () => {
 		const response = { body: null } as Response;
 		await expect(parseResponse(response)).rejects.toThrow("No reader");
 	});
+
+	it("ignores unsupported messages and keeps parsing", async () => {
+		const encoder = new TextEncoder();
+		const chunks = [
+			'data: "skip"\n',
+			'data: {"type":"server_ste_metadata","metadata":{"model_slug":"gpt-4o"}}\n',
+			'data: {"type":"input_message","conversation_id":"c2"}\n',
+			"data: {invalid json}\n",
+			'data: {"foo":"bar"}\n',
+			'data: {"v":"Hi"}\n',
+			'data: {"v":123}\n',
+			'data: {"v":[{"p":"/message/content/parts/0","o":"patch","v":" there"}]}\n',
+			'data: {"v":[{"p":"/message/status","v":"finished_successfully"}]}\n',
+		];
+
+		const stream = new ReadableStream({
+			start(controller) {
+				for (const chunk of chunks) {
+					controller.enqueue(encoder.encode(chunk));
+				}
+				controller.close();
+			},
+		});
+
+		const response = new Response(stream);
+		const { parseResponse } = streamUtil();
+		const result = await parseResponse(response);
+
+		expect(result.answer).toBe("Hi there");
+		expect(result.modelSlug).toBe("gpt-4o");
+		expect(result.chatConversationId).toBe("c2");
+	});
 });
