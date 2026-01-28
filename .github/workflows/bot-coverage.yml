@@ -49,13 +49,35 @@ jobs:
           color: green
           path: badges/bot-coverage.svg
 
+      - name: Bump badge cache buster
+        if: github.event_name == 'push'
+        run: |
+          python - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          readme = Path("README.md")
+          if not readme.exists():
+              raise SystemExit(0)
+
+          run_number = os.environ.get("GITHUB_RUN_NUMBER", "1")
+          text = readme.read_text()
+          text = re.sub(
+              r"(badges/bot-coverage\.svg)(\?v=\d+)?",
+              lambda m: f"{m.group(1)}?v={run_number}",
+              text,
+          )
+          readme.write_text(text)
+          PY
+
       - name: Commit badge
         if: github.event_name == 'push'
         run: |
           if [[ -n "$(git status --porcelain badges)" ]]; then
             git config user.name "github-actions[bot]"
             git config user.email "github-actions[bot]@users.noreply.github.com"
-            git add badges/bot-coverage.svg
+            git add badges/bot-coverage.svg README.md
             git commit -m "chore: update bot coverage badge"
             git push
           fi

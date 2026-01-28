@@ -1,7 +1,7 @@
 # ChatGPT WhatsApp Bot + Puppeteer API
 
-![API coverage](badges/api-coverage.svg)
-![Bot coverage](badges/bot-coverage.svg)
+![API coverage](badges/api-coverage.svg?v=1)
+![Bot coverage](badges/bot-coverage.svg?v=1)
 
 This repo contains a WhatsApp bot that responds to chat commands and a local API
 that drives ChatGPT (and Sora video generation) via a Puppeteer browser. The bot
