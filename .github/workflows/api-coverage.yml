@@ -45,6 +45,17 @@ jobs:
         with:
           label: api coverage
           status: ${{ steps.coverage.outputs.coverage }}
+          label-color: "555"
           color: green
           path: badges/api-coverage.svg
-          commit-message: "chore: update api coverage badge"
+
+      - name: Commit badge
+        if: github.event_name == 'push'
+        run: |
+          if [[ -n "$(git status --porcelain badges)" ]]; then
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git add badges/api-coverage.svg
+            git commit -m "chore: update api coverage badge"
+            git push
+          fi
