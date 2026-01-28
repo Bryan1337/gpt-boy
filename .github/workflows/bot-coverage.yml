@@ -1,0 +1,50 @@
+name: bot-coverage
+
+on:
+  push:
+    paths:
+      - "bot/**"
+      - "shared/**"
+      - ".github/workflows/bot-coverage.yml"
+  pull_request:
+    paths:
+      - "bot/**"
+      - "shared/**"
+      - ".github/workflows/bot-coverage.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: |
+            bot/yarn.lock
+            yarn.lock
+
+      - name: Install dependencies
+        run: yarn --cwd bot install
+
+      - name: Run coverage
+        run: yarn --cwd bot test:coverage
+
+      - name: Extract coverage
+        id: coverage
+        run: |
+          node -e "const fs=require('fs');const s=JSON.parse(fs.readFileSync('bot/coverage/coverage-summary.json','utf8'));const pct=s.total.lines.pct;console.log('coverage=' + pct.toFixed(2) + '%')" >> $GITHUB_OUTPUT
+
+      - name: Update badge
+        uses: emibcn/badge-action@v2
+        with:
+          label: bot coverage
+          status: ${{ steps.coverage.outputs.coverage }}
+          color: green
+          path: badges/bot-coverage.svg
+          commit-message: "chore: update bot coverage badge"

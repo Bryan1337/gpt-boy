@@ -1,0 +1,50 @@
+name: api-coverage
+
+on:
+  push:
+    paths:
+      - "api/**"
+      - "shared/**"
+      - ".github/workflows/api-coverage.yml"
+  pull_request:
+    paths:
+      - "api/**"
+      - "shared/**"
+      - ".github/workflows/api-coverage.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: yarn
+          cache-dependency-path: |
+            api/yarn.lock
+            yarn.lock
+
+      - name: Install dependencies
+        run: yarn --cwd api install
+
+      - name: Run coverage
+        run: yarn --cwd api test:coverage
+
+      - name: Extract coverage
+        id: coverage
+        run: |
+          node -e "const fs=require('fs');const s=JSON.parse(fs.readFileSync('api/coverage/coverage-summary.json','utf8'));const pct=s.total.lines.pct;console.log('coverage=' + pct.toFixed(2) + '%')" >> $GITHUB_OUTPUT
+
+      - name: Update badge
+        uses: emibcn/badge-action@v2
+        with:
+          label: api coverage
+          status: ${{ steps.coverage.outputs.coverage }}
+          color: green
+          path: badges/api-coverage.svg
+          commit-message: "chore: update api coverage badge"
