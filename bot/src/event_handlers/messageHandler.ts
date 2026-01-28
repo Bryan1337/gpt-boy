@@ -28,7 +28,7 @@ export const messageHandler = async (message: Message) => {
 
 			reactBlocked(message);
 
-			const blockedMessage = "Sorry, you are not allowed to use to use the Boy.";
+			const blockedMessage = "Sorry, you are not allowed to use the Boy.";
 
 			if (!process.env.OWNER_ID) {
 				reply(message, blockedMessage);
