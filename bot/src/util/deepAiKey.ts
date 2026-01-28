@@ -1,8 +1,8 @@
 const tryItApiKeySuffix = "hackers_become_a_little_stinkier_every_time_they_hack";
 
 export const generateTryItApiKey = (userAgent: string) => {
-	var myrandomstr = Math.round(Math.random() * 100000000000) + "";
-	var myhashfunction = eval(`(function () {
+	const randomString = Math.round(Math.random() * 100000000000) + "";
+	const hashFunction = eval(`(function () {
 		for (var a = [], b = 0; 64 > b; ) a[b] = 0 | (4294967296 * Math.sin(++b % Math.PI));
 		return function (c) {
 			var d,
@@ -43,14 +43,14 @@ export const generateTryItApiKey = (userAgent: string) => {
 			return c.split("").reverse().join("");
 		};
 	})()`);
-	var tryitApiKey =
+	const tryitApiKey =
 		"tryit-" +
-		myrandomstr +
+		randomString +
 		"-" +
-		myhashfunction(
+		hashFunction(
 			userAgent +
-				myhashfunction(
-					userAgent + myhashfunction(userAgent + myrandomstr + tryItApiKeySuffix),
+				hashFunction(
+					userAgent + hashFunction(userAgent + randomString + tryItApiKeySuffix),
 				),
 		);
 	return tryitApiKey;

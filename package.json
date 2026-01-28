@@ -3,7 +3,7 @@
 	"version": "1.0.0",
 	"scripts": {
 		"prepare": "husky install",
-		"lint": "eslint 'bot/src/**/*.{ts,tsx}' 'api/src/**/*.{ts,tsx}'",
+		"lint": "eslint \"bot/src/**/*.{ts,tsx}\" \"api/src/**/*.{ts,tsx}\"",
 		"format": "prettier --write 'bot/src/**/*.{ts,tsx,js,json}' 'api/src/**/*.{ts,tsx,js,json}'",
 		"build": "tsc --build bot/tsconfig.json api/tsconfig.json",
 		"type-check": "tsc --noEmit -p bot/tsconfig.json && tsc --noEmit -p api/tsconfig.json",
@@ -25,7 +25,7 @@
 	},
 	"lint-staged": {
 		"*.{ts,tsx}": [
-			"eslint --fix 'bot/src/**/*.{ts,tsx}' 'api/src/**/*.{ts,tsx}'",
+			"eslint --fix",
 			"prettier --write"
 		],
 		"*.{js,json,md}": [

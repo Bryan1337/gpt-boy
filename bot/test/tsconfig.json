@@ -1,0 +1,13 @@
+{
+	"extends": "../../tsconfig.base.json",
+	"compilerOptions": {
+		"baseUrl": "..",
+		"ignoreDeprecations": "6.0",
+		"paths": {
+			"@/*": ["src/*"],
+			"@/test/*": ["test/*"],
+			"node-gtts": ["../shared/types/node-gtts"]
+		}
+	},
+	"include": ["**/*.ts"]
+}

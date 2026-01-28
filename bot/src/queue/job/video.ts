@@ -34,7 +34,8 @@ export async function handleVideoQueueJob(
 
 	const { taskId, numVideosRemaining } = localVideoResponse;
 
-	while (true) {
+	let polling = true;
+	while (polling) {
 		try {
 			const task = await requestVideo(taskId, sentMessage);
 
@@ -43,6 +44,7 @@ export async function handleVideoQueueJob(
 
 				reactError(message);
 
+				polling = false;
 				break;
 			}
 
@@ -57,6 +59,7 @@ export async function handleVideoQueueJob(
 				reactError(sentMessage);
 				reply(sentMessage, task.error);
 
+				polling = false;
 				break;
 			}
 
@@ -79,6 +82,7 @@ export async function handleVideoQueueJob(
 			replyWithMedia(message, messageText, messageProps);
 			reactSuccess(message);
 
+			polling = false;
 			break;
 		} catch (error) {
 			logError(error);

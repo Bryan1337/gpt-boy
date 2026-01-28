@@ -18,30 +18,27 @@ export const getConversationsResponse = async ({
 	newMessageId,
 	parentMessageId,
 }: ConversationRequestParams) => {
-	let { prompt, gptConversationId: conversationId } = body;
+	const { prompt, gptConversationId: conversationId } = body;
 
 	try {
-		const { stream, conversationRequest, sentinel, turnstile } =
-			window.gptBoyUtils;
+		const { stream, conversationRequest, sentinel, turnstile } = window.gptBoyUtils;
 
 		const streamUtil = stream();
 		const sentinelUtil = sentinel();
 		const turnstileUtil = turnstile();
 		const requestUtil = await conversationRequest();
 
-		const chatRequirementsRequestToken =
-			await sentinelUtil.getRequirementsToken();
+		const chatRequirementsRequestToken = await sentinelUtil.getRequirementsToken();
 
 		const chatRequirementsResponse = await requestUtil.chatRequirements(
-			chatRequirementsRequestToken
+			chatRequirementsRequestToken,
 		);
 
-		const { token: requirementsResponseToken, proofofwork } =
-			chatRequirementsResponse;
+		const { token: requirementsResponseToken, proofofwork } = chatRequirementsResponse;
 
 		const turnstileToken = await turnstileUtil.getEnforcementToken(
 			chatRequirementsResponse,
-			chatRequirementsRequestToken
+			chatRequirementsRequestToken,
 		);
 
 		const chatCompletionParams = {
@@ -54,44 +51,31 @@ export const getConversationsResponse = async ({
 		};
 
 		if (conversationId) {
-			const conversationIdResponse = await requestUtil.chatConversationId(
-				conversationId
-			);
+			const conversationIdResponse = await requestUtil.chatConversationId(conversationId);
 
 			if (conversationIdResponse.current_node) {
-				chatCompletionParams.parentMessageId =
-					conversationIdResponse.current_node;
+				chatCompletionParams.parentMessageId = conversationIdResponse.current_node;
 			}
 		}
 
-		const enforcementToken = await sentinelUtil.getEnforcementToken(
-			proofofwork
-		);
+		const enforcementToken = await sentinelUtil.getEnforcementToken(proofofwork);
 
 		const chatCompletionRequestParams = {
 			...chatCompletionParams,
 			enforcementToken,
 		};
 
-		let chatCompletionResponse = await requestUtil.chatCompletion(
-			chatCompletionRequestParams
-		);
+		let chatCompletionResponse = await requestUtil.chatCompletion(chatCompletionRequestParams);
 
 		const conversationTooLong =
-			chatCompletionResponse.status ===
-			ResponseCode.CONVERSATION_TOO_LONG;
-		const tooManyRequests =
-			chatCompletionResponse.status === ResponseCode.TOO_MANY_REQUESTS;
+			chatCompletionResponse.status === ResponseCode.CONVERSATION_TOO_LONG;
+		const tooManyRequests = chatCompletionResponse.status === ResponseCode.TOO_MANY_REQUESTS;
 
 		if (conversationTooLong) {
-			const {
-				conversationId: _,
-				...chatCompletionRequestParamsWithoutConversationId
-			} = chatCompletionRequestParams;
-
-			chatCompletionResponse = await requestUtil.chatCompletion(
-				chatCompletionRequestParamsWithoutConversationId
-			);
+			chatCompletionResponse = await requestUtil.chatCompletion({
+				...chatCompletionRequestParams,
+				conversationId: undefined,
+			});
 		}
 
 		if (tooManyRequests) {
@@ -113,7 +97,7 @@ export const getConversationsResponse = async ({
 
 		return {
 			chatConversationId: conversationId,
-			error,
+			error: error instanceof Error ? error.message : String(error),
 		};
 	}
 };

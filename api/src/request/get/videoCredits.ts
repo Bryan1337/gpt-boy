@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { logError, logInfo } from "@/util/log";
 import { getVideoCreditsResponse } from "@/client/video";
+import { getErrorMessage } from "@/util/error";
 
 export async function videoCreditsRequest(request: Request, response: Response) {
 	try {
@@ -10,10 +11,11 @@ export async function videoCreditsRequest(request: Request, response: Response) 
 
 		response.json(videoResponse);
 	} catch (error) {
-		logError((error as Error).message);
+		const errorMessage = getErrorMessage(error);
+		logError(errorMessage);
 
 		response.json({
-			error: (error as Error).message,
+			error: errorMessage,
 		});
 	}
 }

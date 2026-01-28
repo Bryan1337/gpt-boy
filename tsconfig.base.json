@@ -18,5 +18,5 @@
 		"useUnknownInCatchVariables": true,
 		"typeRoots": ["./node_modules/@types", "./shared/types"]
 	},
-	"include": ["shared/types/**/*", "bot/src", "api/src"]
+	"include": ["shared/types/**/*", "bot/src", "api/src", "bot/vitest.config.ts"]
 }

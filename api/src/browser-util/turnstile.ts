@@ -1,3 +1,4 @@
+/* eslint-disable no-var, prefer-rest-params */
 export type TurnstileUtil = typeof turnstileUtil;
 
 declare global {
@@ -31,7 +32,7 @@ const turnstileUtil = () => {
 	}
 
 	const registryHelper = () => {
-		let globalRegistry = new Map();
+		const globalRegistry = new Map();
 
 		function processInput(encodedInput: string): Promise<string> {
 			return new Promise((resolve, reject) => {
@@ -54,7 +55,7 @@ const turnstileUtil = () => {
 					);
 
 					while (globalRegistry.get(9).length > 0) {
-						let [callbackKey, ...args] = globalRegistry.get(9).shift() as [
+						const [callbackKey, ...args] = globalRegistry.get(9).shift() as [
 							number,
 							...unknown[],
 						];
@@ -316,12 +317,12 @@ const turnstileUtil = () => {
 					resolve(result);
 				});
 
-				this.setOnError(async (error: any) => {
+				this.setOnError(async (error: unknown) => {
 					if (retryOnError) {
-						resolve(new TurnstileClientError(error));
+						resolve(new TurnstileClientError(String(error)));
 					} else {
 						try {
-							let retryResult = await this._getEnforcementToken(data, true);
+							const retryResult = await this._getEnforcementToken(data, true);
 							resolve(retryResult);
 						} catch (retryError) {
 							reject(retryError);

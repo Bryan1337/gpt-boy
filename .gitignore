@@ -5,3 +5,8 @@ node_modules
 .env
 !.env.example
 output*
+coverage
+coverage*
+.nyc_output
+*.lcov
+lcov-report

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import { logError, logInfo } from "@/util/log";
 import { getVideoDraftResponse } from "@/client/video";
+import { getErrorMessage } from "@/util/error";
 
 export async function draftVideoRequest(request: Request, response: Response) {
 	try {
@@ -14,10 +15,11 @@ export async function draftVideoRequest(request: Request, response: Response) {
 
 		response.json(draftResponse);
 	} catch (error) {
-		logError((error as Error).message);
+		const errorMessage = getErrorMessage(error);
+		logError(errorMessage);
 
 		response.json({
-			error: (error as Error).message,
+			error: errorMessage,
 		});
 	}
 }

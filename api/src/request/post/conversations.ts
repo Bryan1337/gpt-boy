@@ -3,11 +3,9 @@ import { getMessageId } from "@/util/message";
 import { v4 as uuidv4 } from "uuid";
 import { Request, Response } from "express";
 import { logError, logInfo } from "@/util/log";
+import { getErrorMessage } from "@/util/error";
 
-export async function conversationsRequest(
-	request: Request,
-	response: Response
-) {
+export async function conversationsRequest(request: Request, response: Response) {
 	try {
 		logInfo("Received /conversations request...");
 
@@ -22,22 +20,17 @@ export async function conversationsRequest(
 
 		const { chatGptPage } = request.pages;
 
-		const conversationsResponse = await chatGptPage.evaluate(
-			getConversationsResponse,
-			params
-		);
+		const conversationsResponse = await chatGptPage.evaluate(getConversationsResponse, params);
 
-		logInfo(
-			"Returning evaluationResponse:",
-			JSON.stringify(conversationsResponse, null, 2)
-		);
+		logInfo("Returning evaluationResponse:", JSON.stringify(conversationsResponse, null, 2));
 
 		response.json(conversationsResponse);
 	} catch (error) {
-		logError((error as Error).message);
+		const errorMessage = getErrorMessage(error);
+		logError(errorMessage);
 
 		response.json({
-			error: (error as Error).message,
+			error: errorMessage,
 		});
 	}
 }

@@ -81,6 +81,13 @@ export const getCommands = (): Record<string, Command> => ({
 	},
 });
 
+const escapeRegExp = (value: string) => value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+
+const matchesCommand = (text: string, commandText: string) => {
+	const commandPattern = new RegExp(`^${escapeRegExp(commandText)}(\\s|$)`);
+	return commandPattern.test(text);
+};
+
 export function getCommandData(message: Message) {
 	const commands = getCommands();
 	const commandKeys = Object.keys(commands);
@@ -88,14 +95,20 @@ export function getCommandData(message: Message) {
 
 	for (const commandKey of commandKeys) {
 		const command = commands[commandKey];
-		const commandText = command.commandAlias || `${process.env.COMMAND_PREFIX}${commandKey}`;
+		const commandText = `${process.env.COMMAND_PREFIX}${commandKey}`;
+		const commandTexts = (
+			command.commandAlias
+				? [command.commandAlias, command.alias]
+				: [command.alias, commandText]
+		).filter(Boolean) as string[];
 
-		if (text.startsWith(commandText)) {
-			const command = commands[commandKey];
-			return {
-				command,
-				commandKey: commandText,
-			};
+		for (const matchedCommandText of commandTexts) {
+			if (matchesCommand(text, matchedCommandText)) {
+				return {
+					command,
+					commandKey: matchedCommandText,
+				};
+			}
 		}
 	}
 

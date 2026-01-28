@@ -37,7 +37,7 @@ export const getVideoResponse = async ({ body }: { body: { prompt: string } }) =
 		};
 	} catch (error) {
 		console.error(error);
-		return { error };
+		return { error: error instanceof Error ? error.message : String(error) };
 	}
 };
 
@@ -57,7 +57,12 @@ export const getPendingVideoResponse = async ({ body }: { body: { taskId: string
 		};
 	}
 
-	const pendingTask = (pendingResponse ?? []).find((task: any) => task.id === taskId);
+	type PendingTask = {
+		id: string;
+		progress_pct?: number | null;
+	};
+
+	const pendingTask = (pendingResponse as PendingTask[]).find((task) => task.id === taskId);
 
 	if (!pendingTask) {
 		return {
@@ -79,7 +84,7 @@ export const getVideoCreditsResponse = async () => {
 
 		return usageResponse;
 	} catch (error) {
-		return { error };
+		return { error: error instanceof Error ? error.message : String(error) };
 	}
 };
 
@@ -116,6 +121,6 @@ export const getVideoDraftResponse = async ({ body }: { body: { taskId: string }
 		return draft;
 	} catch (error) {
 		console.log(error);
-		return { error };
+		return { error: error instanceof Error ? error.message : String(error) };
 	}
 };

@@ -18,8 +18,10 @@ const videoQueue = new Queue({
 	timeout: 60 * 5 * 1000,
 });
 
-const chatJobMap: WeakMap<Function, Message> = new WeakMap();
-const videoJobMap: WeakMap<Function, Message> = new WeakMap();
+type QueueJob = (callback?: QueueWorkerCallback) => void | Promise<void>;
+
+const chatJobMap: WeakMap<QueueJob, Message> = new WeakMap();
+const videoJobMap: WeakMap<QueueJob, Message> = new WeakMap();
 
 const maxChatAttempts = 10;
 const delayBetweenAttempts = 5e3;
