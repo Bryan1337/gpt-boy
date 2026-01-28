@@ -9,7 +9,7 @@ export default defineConfig({
 		clearMocks: true,
 		coverage: {
 			provider: "istanbul",
-			reporter: ["text", "html", "lcov"],
+			reporter: ["text", "html", "lcov", "json-summary"],
 			reportsDirectory: "coverage",
 			include: ["src/**/*.ts"],
 			exclude: [
