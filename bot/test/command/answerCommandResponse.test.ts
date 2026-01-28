@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { createMessage } from "@/test/setup";
 
 const hoisted = vi.hoisted(() => ({
@@ -32,6 +32,12 @@ vi.mock("@/util/log", async () => {
 import { answerCommandResponse } from "@/command";
 
 describe("answerCommandResponse", () => {
+	beforeEach(() => {
+		hoisted.helpCommand.mockClear();
+		hoisted.reply.mockClear();
+		hoisted.logError.mockClear();
+	});
+
 	it("replies with error when command handler throws", async () => {
 		const message = createMessage({ body: "!help" });
 		await answerCommandResponse(message);
@@ -42,5 +48,13 @@ describe("answerCommandResponse", () => {
 			message,
 			expect.stringContaining("Something went wrong"),
 		);
+	});
+
+	it("returns when no command is matched", async () => {
+		const message = createMessage({ body: "hello there" });
+		await answerCommandResponse(message);
+
+		expect(hoisted.helpCommand).not.toHaveBeenCalled();
+		expect(hoisted.reply).not.toHaveBeenCalled();
 	});
 });

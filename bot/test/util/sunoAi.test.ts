@@ -54,6 +54,26 @@ describe("sunoAi utils", () => {
 		await expect(pollClipIds(["1"], "token")).rejects.toThrow("bad");
 	});
 
+	it("returns null when no matching clip is complete", async () => {
+		fetch.mockResolvedValueOnce({
+			json: vi.fn().mockResolvedValueOnce({
+				clips: [
+					{
+						id: "2",
+						audio_url: "",
+						video_url: "v",
+						title: "t",
+						status: "queued",
+						metadata: { error_message: "" },
+					},
+				],
+			}),
+		});
+
+		const clip = await pollClipIds(["1"], "token");
+		expect(clip).toBeNull();
+	});
+
 	it("initializes a session", async () => {
 		const response = { ok: true };
 		fetch.mockResolvedValueOnce(response);

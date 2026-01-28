@@ -63,6 +63,8 @@ describe("queue index", () => {
 	beforeEach(() => {
 		queueState.lastChatJob = null;
 		queueState.lastVideoJob = null;
+		reply.mockClear();
+		reactError.mockClear();
 	});
 
 	it("adds chat job and invokes handler", async () => {
@@ -107,6 +109,24 @@ describe("queue index", () => {
 			expect.stringContaining("video request timed out"),
 		);
 		expect(reactError).toHaveBeenCalledWith(message);
+		expect(next).toHaveBeenCalled();
+	});
+
+	it("ignores chat timeouts without a mapped message", async () => {
+		const next = vi.fn();
+		queueState.chatTimeoutHandler?.({ detail: { job: () => {}, next } });
+
+		expect(reply).not.toHaveBeenCalled();
+		expect(reactError).not.toHaveBeenCalled();
+		expect(next).toHaveBeenCalled();
+	});
+
+	it("ignores video timeouts without a mapped message", async () => {
+		const next = vi.fn();
+		queueState.videoTimeoutHandler?.({ detail: { job: () => {}, next } });
+
+		expect(reply).not.toHaveBeenCalled();
+		expect(reactError).not.toHaveBeenCalled();
 		expect(next).toHaveBeenCalled();
 	});
 });

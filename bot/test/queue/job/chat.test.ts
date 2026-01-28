@@ -1,4 +1,4 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handleChatQueueJob } from "@/queue/job/chat";
 import * as contextDataHandlers from "@/data_handlers/context/getContext";
 import * as conversationDataHandlers from "@/data_handlers/conversation/getConversationDetails";
@@ -14,7 +14,7 @@ import { createMessage, createMessageUtilsMock } from "@/test/setup";
 import { Chat, Contact, MessageMedia } from "whatsapp-web.js";
 
 describe("handleChatQueueJob", () => {
-	vi.spyOn(contextDataHandlers, "getContext").mockImplementation(() => null);
+	const getContext = vi.spyOn(contextDataHandlers, "getContext").mockImplementation(() => null);
 	vi.spyOn(conversationDataHandlers, "getConversationDetails").mockImplementation(() => ({
 		whatsappIdentifier: "id",
 	}));
@@ -47,6 +47,10 @@ describe("handleChatQueueJob", () => {
 	});
 	vi.spyOn(promptDataHandlers, "storePrompt").mockImplementation(() => {});
 
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
+
 	it("replies with model response when audio is disabled", async () => {
 		getLocalChatResponse.mockResolvedValueOnce({
 			answer: "hello",
@@ -65,6 +69,28 @@ describe("handleChatQueueJob", () => {
 		await handleChatQueueJob({ message, text: "hi" });
 		expect(setConversationDetails).toHaveBeenCalledWith("id", "conv");
 		expect(reply).toHaveBeenCalledWith(message, "(gpt)\n\nhello");
+	});
+
+	it("includes context in the prompt when available", async () => {
+		getContext.mockReturnValueOnce("Context");
+		getLocalChatResponse.mockResolvedValueOnce({
+			answer: "hello",
+			modelSlug: "gpt",
+			chatConversationId: "conv",
+		});
+
+		const message = createMessage({
+			id: { remote: "id" },
+			getChat: vi.fn().mockResolvedValueOnce({ clearState: vi.fn() } as unknown as Chat),
+			getContact: vi.fn().mockResolvedValueOnce({ pushname: "Bob" } as unknown as Contact),
+		});
+
+		await handleChatQueueJob({ message, text: "hi" });
+
+		expect(getLocalChatResponse).toHaveBeenCalledWith(
+			"Context\n [Bob]: hi",
+			expect.objectContaining({ whatsappIdentifier: "id" }),
+		);
 	});
 
 	it("handles unusual activity errors", async () => {
@@ -121,5 +147,29 @@ describe("handleChatQueueJob", () => {
 			message,
 			expect.stringContaining("Something went wrong"),
 		);
+	});
+
+	it("retries when attempts remain", async () => {
+		vi.useFakeTimers();
+		getLocalChatResponse.mockRejectedValueOnce(new Error("bad")).mockResolvedValueOnce({
+			answer: "hello",
+			modelSlug: "gpt",
+			chatConversationId: "conv",
+		});
+
+		const message = createMessage({
+			id: { remote: "id" },
+			getChat: vi.fn().mockResolvedValue({ clearState: vi.fn() } as unknown as Chat),
+			getContact: vi.fn().mockResolvedValue({ pushname: "Bob" } as unknown as Contact),
+		});
+
+		const promise = handleChatQueueJob({ message, text: "hi" }, 1, 2, 1);
+
+		await vi.runAllTimersAsync();
+		await promise;
+		vi.useRealTimers();
+
+		expect(getLocalChatResponse).toHaveBeenCalledTimes(2);
+		expect(reactError).not.toHaveBeenCalled();
 	});
 });

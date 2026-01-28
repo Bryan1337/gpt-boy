@@ -7,6 +7,10 @@ describe("time utils", () => {
 		expect(formatSeconds(61)).toBe("1 minute, 1 second");
 		expect(formatSeconds(3661)).toBe("1 hour, 1 minute, 1 second");
 		expect(formatSeconds(90061)).toBe("1 day, 1 hour, 1 minute, 1 second");
+		expect(formatSeconds(60)).toBe("1 minute");
+		expect(formatSeconds(7200)).toBe("2 hours");
+		expect(formatSeconds(172800)).toBe("2 days");
+		expect(formatSeconds(122)).toBe("2 minutes, 2 seconds");
 	});
 
 	it("pauses for the requested duration", async () => {

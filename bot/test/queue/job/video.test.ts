@@ -1,6 +1,7 @@
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { handleVideoQueueJob } from "@/queue/job/video";
 import * as fileUtils from "@/util/file";
+import * as logUtils from "@/util/log";
 import * as requestUtils from "@/util/request";
 import * as timeUtils from "@/util/time";
 import * as videoUtils from "@/util/video";
@@ -20,11 +21,16 @@ describe("handleVideoQueueJob", () => {
 	const replyWithMedia = vi.fn();
 	createMessageUtilsMock({ reactVideo, reactError, reactSuccess, edit, reply, replyWithMedia });
 	vi.spyOn(timeUtils, "pause").mockImplementation(async () => {});
+	const logError = vi.spyOn(logUtils, "logError").mockImplementation(() => {});
 	const requestVideo = vi.spyOn(videoUtils, "requestVideo").mockImplementation(async () => null);
 	vi.spyOn(fileUtils, "saveExternalFile").mockImplementation(async () => "/tmp/video.mp4");
 	vi.spyOn(whatsappWebUtils, "getMessageMediaFromFilePath").mockImplementation(
 		() => ({ kind: "media" }) as unknown as Message,
 	);
+
+	beforeEach(() => {
+		vi.clearAllMocks();
+	});
 
 	it("returns early when no prompt provided", async () => {
 		const message = createMessage();
@@ -90,5 +96,19 @@ describe("handleVideoQueueJob", () => {
 			expect.objectContaining({ media: expect.anything() }),
 		);
 		expect(reactSuccess).toHaveBeenCalledWith(message);
+	});
+
+	it("retries when requestVideo throws", async () => {
+		getLocalVideoResponse.mockResolvedValueOnce({ taskId: "task", numVideosRemaining: 1 });
+		requestVideo
+			.mockRejectedValueOnce(new Error("boom"))
+			.mockResolvedValueOnce({ error: "bad" });
+
+		const message = createMessage({ reply: vi.fn(async () => createMessage()) });
+		await handleVideoQueueJob({ message, text: "prompt" }, 1000);
+
+		expect(logError).toHaveBeenCalledWith(expect.any(Error));
+		expect(timeUtils.pause).toHaveBeenCalledWith(1000);
+		expect(requestVideo).toHaveBeenCalledTimes(2);
 	});
 });
